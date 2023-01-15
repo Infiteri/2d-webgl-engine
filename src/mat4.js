@@ -34,11 +34,12 @@ export function create() {
 }
 
 export function setPosition(out, x, y, z) {
-  out[12] = x
-  out[13] = y
-  out[14] = z
+  out[12] = x;
+  out[13] = y;
+  out[14] = z;
 
-  return out
+
+  return out;
 }
 
 /**

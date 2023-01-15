@@ -4,12 +4,16 @@ import Mesh from "./script/graphics/Mesh.js";
 const engine = new Engine();
 
 const m = new Mesh({
-  height: 50,
-  width: 50,
+  textureName: "crate.png",
 });
 
-m.SetPosition(100, 50);
+m.SetPosition(250, 100, -6);
 engine.AddMesh(m);
-
 engine.Init();
-engine.Render();
+
+function r() {
+  requestAnimationFrame(r);
+  engine.Render();
+}
+
+r();

@@ -11,21 +11,19 @@ export default class Mesh {
     x = 100,
     y = 100,
     z = -10,
-    color = new core.Color(0, 125, 255, 255),
-    texture = true,
+    color = new core.Color(255, 255, 255, 255),
+    textureName,
   }) {
-    this.x = x;
-    this.y = y;
-    this.z = z;
+    this.position = new core.Vector3(x, y, z);
     this.color = color;
-    this.texture = texture;
+
+    this.textureName = textureName;
+    this.texture = core.TextureManager.GetTexture(this.textureName);
 
     this.width = width;
     this.height = height;
 
-    this.CheckForTexture(); //If there is a texture: update shaders; else: do nothing (stays the same)
-
-    this.buffer = new core.Buffer(3);
+    this.buffer = new core.Buffer(5);
     this.shader = new core.Shader(
       "Mesh Shader",
       core.shaders.vsShader,
@@ -34,32 +32,50 @@ export default class Mesh {
 
     //Initial position
     this.model = mat4.create();
-    mat4.translate(this.model, this.model, [this.x, this.y, this.z]);
+    mat4.translate(this.model, this.model, [
+      this.position.x,
+      this.position.y,
+      this.position.z,
+    ]);
+
+    //Add Vertex Data
+    this.vertexInfo = new core.AttributeInfo(0, 0, 3);
+    this.buffer.AddAttribute(this.vertexInfo);
+
+    this.texInfo = new core.AttributeInfo(1, 3, 2);
+    this.buffer.AddAttribute(this.texInfo);
 
     this.data = [
       0,
       0,
       0,
-      //
       0,
-      height,
+      0, // End
       0,
-      //
-      width,
-      height,
-      0,
-      //
-      width,
-      height,
-      0,
-      //
-      width,
+      this.height,
       0,
       0,
+      1.0, // End
+      this.width,
+      this.height,
       0,
-      //
+      1.0,
+      1.0, // End
+      this.width,
+      this.height,
+      0,
+      1.0,
+      1.0, // End
+      this.width,
       0,
       0,
+      1.0,
+      0, // End
+      0,
+      0,
+      0,
+      0,
+      0, // End
     ];
 
     this.buffer.PushBackData(this.data);
@@ -67,29 +83,29 @@ export default class Mesh {
     this.Init();
   }
 
-  CheckForTexture() {
-    //Update the bits if the texture exists
-    if (this.texture) core.shaders.UpdateShaderCode({});
+  Destroy() {
+    this.buffer.Delete();
+    core.TextureManager.ReleaseTexture(this.textureName);
   }
 
   Init() {
-    //Add Vertex Data
-    this.vertexInfo = new core.AttributeInfo(0, 0, 3);
-    this.buffer.AddAttribute(this.vertexInfo);
-
     this.buffer.Upload();
   }
 
   /**
    * @param {Camera2D} camera
+   * @param {core.Shader} shader
    */
   Draw(camera) {
     this.shader._use();
-
     this.Bind(camera);
 
-    this.buffer.Bind();
+    this.texture.ActivateAndBind(0);
 
+    const diffuseLocation = this.shader.GetUniformLocation("uDiffuse");
+    gl.uniform1i(diffuseLocation, 0);
+
+    this.buffer.Bind();
     this.buffer.Draw();
   }
 
@@ -112,46 +128,19 @@ export default class Mesh {
 
     //Bind the tint
     const tintLocation = this.shader.GetUniformLocation("uTint");
-    gl.uniform4fv(tintLocation, this.color.ToFloatArray());
+    gl.uniform4fv(tintLocation, this.color.ToFloat32Array());
   }
 
   SetPosition(x, y, z) {
-    //Reset the x, y, z
-    this.x = x;
-    this.y = y;
-    this.z = z;
+    this.position.x = x;
+    this.position.y = y;
+    this.position.z = z;
 
-    //Set with the new x, y, z ont he mesh instance (what it was reset up above)
-    mat4.setPosition(this.model, this.x, this.y, this.z);
-  }
-
-  UpdateShaderCode() {
-    vsShader = `
-    attribute vec4 aVertexPosition;
-    attribute vec2 aTexCoord;
-
-    uniform mat4 uProjectionMatrix;
-    uniform mat4 uModelMatrix;
-
-    varying vec2 vTexCoord;
-
-    void main() {
-        gl_Position = uProjectionMatrix * uModelMatrix * aVertexPosition;
-        vTexCoord = aTexCoord;
-    }
-`;
-
-    fsShader = `
-    precision highp float;
-
-    uniform vec4 uTint;
-
-    uniform sampler2D uImage;
-		varying vec2 vTexCoord;
-
-    void main() {
-        gl_FragColor = uTint ${shaders.textureVsMul};
-    }
-`;
+    mat4.setPosition(
+      this.model,
+      this.position.x,
+      this.position.y,
+      this.position.z
+    );
   }
 }

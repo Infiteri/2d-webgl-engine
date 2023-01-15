@@ -8,14 +8,20 @@ export default class Engine {
 
     this.camera = new core.Camera2D(this.canvas);
 
-    gl.clearColor(0, 0, 1, 1);
+    gl.clearColor(0, 0, 0, 1);
 
     this.elements = [];
+
+    core.AssetManager.Init();
   }
 
   Init() {
     this.elements.forEach(e => {
-      e.SetPosition(e.x - this.camera.x, e.y - this.camera.y, this.camera.z);
+      e.SetPosition(
+        e.position.x - this.camera.x,
+        e.position.y - this.camera.y,
+        this.camera.z
+      );
     });
   }
 
@@ -24,6 +30,8 @@ export default class Engine {
   }
 
   Render() {
+    core.MessageBus.Update(0);
+
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     this.elements.forEach(e => {
